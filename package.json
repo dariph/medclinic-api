@@ -1,0 +1,61 @@
+{
+  "name": "Projeto-MedClinic-API",
+  "version": "1.0.0",
+  "description": "API REST da MedClinic - Etapa 2: Agendamento, escala e prontuário",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "typeorm": "tsx ./node_modules/typeorm/cli.js",
+    "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts src/database/migrations/UpdateSchema",
+    "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
+    "seed:admin": "tsx src/database/seeders/admin.ts"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "typescript",
+    "typeorm",
+    "postgresql",
+    "jwt",
+    "rbac"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^2.1.2",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.9.6",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^2.1.2"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0",
+    "typeorm": "^0.3.31",
+    "zod": "^4.6.7"
+  }
+}
