@@ -1,0 +1,213 @@
+### =========================================================
+### VARIÁVEIS DE AMBIENTE (REST Client)
+### Obs: Após rodar os requests de login ou criação, copie os
+### tokens/UUIDs retornados ou use a captura automática (@name)
+### =========================================================
+@baseUrl = http://localhost:3000/api/v1
+
+# Credenciais configuradas no .env (usadas pelo SeedAdmin)
+@adminEmail = admin@medclinic.com
+@adminPassword = SenhaForte@123
+
+# Tokens (Preenchidos automaticamente pelos requests @name ou manualmente)
+@adminToken = {{loginAdmin.response.body.accessToken}}
+@secretaryToken = {{loginSecretary.response.body.accessToken}}
+@doctorToken = {{loginDoctor.response.body.accessToken}}
+
+# IDs gerados (Preenchidos automaticamente pelos requests @name ou manualmente)
+@patientId = {{createPatient.response.body.id}}
+@doctorId = {{createDoctor.response.body.id}}
+@appointmentId = {{createAppointment.response.body.id}}
+
+### =========================================================
+### 1. SAÚDE E AUTENTICAÇÃO (Seção 4.9.2)
+### =========================================================
+
+### 1.1 Health Check (Público) - Esperado: 200 OK
+GET {{baseUrl}}/health
+
+### 1.2 Login Administrador (Criado via Migration/Seed) - Esperado: 200 OK
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### 1.3 Consultar dados do usuário autenticado (/users/me) - Esperado: 200 OK
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{adminToken}}
+
+### =========================================================
+### 2. GESTÃO DE USUÁRIOS (Apenas Admin - RF13)
+### =========================================================
+
+### 2.1 Criar Secretária (Perfil: admin) - Esperado: 201 Created
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Joana Secretária",
+  "email": "joana@medclinic.com",
+  "password": "SenhaForte@123",
+  "roles": ["secretary"]
+}
+
+### 2.2 Login da Secretária - Esperado: 200 OK
+# @name loginSecretary
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "joana@medclinic.com",
+  "password": "SenhaForte@123"
+}
+
+### =========================================================
+### 3. PACIENTES (Seção 4.9.3)
+### =========================================================
+
+### 3.1 Cadastrar Paciente (Perfis: admin, secretary) - Esperado: 201 Created
+# @name createPatient
+POST {{baseUrl}}/patients
+Authorization: Bearer {{secretaryToken}}
+Content-Type: application/json
+
+{
+  "name": "Carlos Pereira",
+  "cpf": "12345678901"
+}
+
+### 3.2 Listar Pacientes com paginação e filtro por nome (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/patients?page=1&pageSize=20&name=Carlos
+Authorization: Bearer {{secretaryToken}}
+
+### 3.3 Buscar Paciente por ID (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/patients/{{patientId}}
+Authorization: Bearer {{secretaryToken}}
+
+### 3.4 Atualizar Nome do Paciente (Perfis: admin, secretary) - Esperado: 200 OK
+PATCH {{baseUrl}}/patients/{{patientId}}
+Authorization: Bearer {{secretaryToken}}
+Content-Type: application/json
+
+{
+  "name": "Carlos Pereira da Silva"
+}
+
+### =========================================================
+### 4. MÉDICOS E ESCALA DE TRABALHO (Seções 4.9.4 e 4.9.5)
+### =========================================================
+
+### 4.1 Cadastrar Médico de forma atômica (Perfil: admin) - Esperado: 201 Created
+# @name createDoctor
+POST {{baseUrl}}/doctors
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Dra. Helena Souza",
+  "email": "helena@medclinic.com",
+  "password": "SenhaForte@123",
+  "crm": "CRM-SC-54321"
+}
+
+### 4.2 Login do Médico - Esperado: 200 OK
+# @name loginDoctor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "helena@medclinic.com",
+  "password": "SenhaForte@123"
+}
+
+### 4.3 Listar Médicos (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/doctors?page=1&pageSize=20&name=Helena
+Authorization: Bearer {{secretaryToken}}
+
+### 4.4 Buscar Médico por ID (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/doctors/{{doctorId}}
+Authorization: Bearer {{secretaryToken}}
+
+### 4.5 Configurar Escala de Trabalho do Médico (Perfil: admin) - Esperado: 200 OK
+PUT {{baseUrl}}/doctors/{{doctorId}}/work-schedule
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "shifts": [
+    {
+      "weekDay": 2,
+      "startTime": "08:00",
+      "endTime": "12:00",
+      "slotDurationMinutes": 30
+    },
+    {
+      "weekDay": 2,
+      "startTime": "14:00",
+      "endTime": "18:00",
+      "slotDurationMinutes": 20
+    },
+    {
+      "weekDay": 4,
+      "startTime": "08:00",
+      "endTime": "11:00",
+      "slotDurationMinutes": 30
+    }
+  ]
+}
+
+### 4.6 Consultar Escala de Trabalho do Médico (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/doctors/{{doctorId}}/work-schedule
+Authorization: Bearer {{secretaryToken}}
+
+### 4.7 Consultar Agenda do Médico num Período (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/doctors/{{doctorId}}/calendar?from=2026-10-12&to=2026-10-16
+Authorization: Bearer {{secretaryToken}}
+
+### =========================================================
+### 5. AGENDAMENTOS E CICLO DE VIDA (Seção 4.9.7)
+### =========================================================
+
+### 5.1 Criar Agendamento (Perfis: admin, secretary) - Esperado: 201 Created
+### (2026-10-13 é uma terça-feira -> weekDay: 2, turno 08:00-12:00, slot de 30 min)
+# @name createAppointment
+POST {{baseUrl}}/appointments
+Authorization: Bearer {{secretaryToken}}
+Content-Type: application/json
+
+{
+  "doctorId": "{{doctorId}}",
+  "patientId": "{{patientId}}",
+  "startsAt": "2026-10-13T08:00:00-03:00"
+}
+
+### 5.2 Listar Agendamentos com Filtros (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/appointments?doctorId={{doctorId}}&from=2026-10-12&to=2026-10-16&page=1&pageSize=20
+Authorization: Bearer {{secretaryToken}}
+
+### 5.3 Buscar Agendamento por ID (Autenticado) - Esperado: 200 OK
+GET {{baseUrl}}/appointments/{{appointmentId}}
+Authorization: Bearer {{doctorToken}}
+
+### 5.4 Iniciar Atendimento: scheduled -> in_progress (Médico responsável ou Admin) - Esperado: 200 OK
+PATCH {{baseUrl}}/appointments/{{appointmentId}}/status
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+### 5.5 Concluir Atendimento: in_progress -> done (Médico responsável ou Admin) - Esperado: 200 OK
+PATCH {{baseUrl}}/appointments/{{appointmentId}}/status
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{
+  "status": "done"
+}
