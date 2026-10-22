@@ -1,0 +1,22 @@
+name: medclinic-api
+
+services:
+  api:
+    image: ghcr.io/dariph/medclinic-api:latest
+    pull_policy: always
+    container_name: ${CONTAINER_NAME_API:-medclinic-api}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: medclinic-api-pg-local
+      DB_PORT: 5432
+      DB_SSL: "false"
+    ports:
+      - "3000:3000"
+    networks:
+      - medclinic-api-v1-network
+
+networks:
+  medclinic-api-v1-network:
+    external: true
