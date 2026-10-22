@@ -1,15 +1,50 @@
-name: Deploy na Nuvem (Render)
+name: Build e Publicar Imagem
 
 on:
   push:
     branches: [main]
 
+permissions:
+  contents: read # Leitura do conteúdo do repositório
+  packages: write # Escrita no GitHub Container Registry
+
 jobs:
-  deploy:
-    name: Disparar Webhook de Deploy
+  build-and-push:
+    name: Build e Push da Imagem Docker
     runs-on: ubuntu-latest
 
     steps:
-      - name: Disparar Render Deploy Hook
-        run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+      - name: Copiar Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gerar Metadados da Imagem
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=,format=long
+            type=raw,value=latest
+
+      - name: Build e Push da Imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      #- name: Disparar Deploy
+      #  run: curl --data-urlencode "imgURL=ghcr.io/<usuario-em-minusculo>/<repo-em-minusculo>:${{ github.sha }}" "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
