@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+.github
+.env
+.env.*
+*.md
+api.rest
+npm-debug.log
+Dockerfile
+docker-compose.yml
+src/**/*.spec.ts
