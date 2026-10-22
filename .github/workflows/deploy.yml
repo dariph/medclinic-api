@@ -1,0 +1,15 @@
+name: Deploy na Nuvem (Render)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Disparar Webhook de Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Disparar Render Deploy Hook
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
