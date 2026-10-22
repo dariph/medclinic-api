@@ -12,21 +12,32 @@ import { getEnvVar } from "../utils/env.js";
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === "production";
+const databaseUrl = process.env.DATABASE_URL?.trim();
+
 const useSsl =
   process.env.DB_SSL !== undefined
     ? process.env.DB_SSL === "true"
-    : isProduction;
+    : databaseUrl
+      ? databaseUrl.includes(".render.com")
+      : isProduction;
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  host: getEnvVar("DB_HOST"),
-  port: Number(getEnvVar("DB_PORT")),
-  username: getEnvVar("DB_USER"),
-  password: getEnvVar("DB_PASS"),
-  database: getEnvVar("DB_NAME"),
+  ...(databaseUrl
+    ? { url: databaseUrl }
+    : {
+        host: getEnvVar("DB_HOST"),
+        port: Number(getEnvVar("DB_PORT")),
+        username: getEnvVar("DB_USER"),
+        password: getEnvVar("DB_PASS"),
+        database: getEnvVar("DB_NAME"),
+      }),
   synchronize: false,
   logging: !isProduction,
   entities: [User, Patient, Doctor, Appointment, MedicalRecord],
-  migrations: ["dist/database/migrations/*.js", "src/database/migrations/*.ts"],
+  migrations: isProduction
+    ? ["dist/database/migrations/*.js"]
+    : ["src/database/migrations/*.ts"],
+  migrationsRun: isProduction,
   ssl: useSsl ? { rejectUnauthorized: false } : false,
 });
