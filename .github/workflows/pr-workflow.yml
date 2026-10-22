@@ -1,0 +1,28 @@
+name: Validar Pull Request
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Build e Testes com Cobertura
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Copiar Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Executar Build
+        run: npm run build
+
+      - name: Executar Testes com Cobertura (Mínimo 80%)
+        run: npm run test:cov
